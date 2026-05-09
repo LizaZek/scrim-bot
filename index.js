@@ -204,34 +204,4 @@ Powodzenia 🔥
   }
 });
 
-const closeButton = new ButtonBuilder()
-  .setCustomId('close_scrim')
-  .setLabel('Close Scrim')
-  .setStyle(ButtonStyle.Danger);
-
-const closeRow = new ActionRowBuilder().addComponents(closeButton);
-
-await channel.send({
-  content: 'Kliknij aby zamknąć scrim.',
-  components: [closeRow],
-});
-
-if (interaction.customId === 'close_scrim') {
-  await interaction.reply({
-    content: 'Kanał zostanie usunięty za 5 sekund...',
-  });
-
-  setTimeout(async () => {
-    await interaction.channel.delete();
-  }, 5000);
-}
-
-setTimeout(async () => {
-  try {
-    await channel.delete();
-  } catch (err) {
-    console.log('Kanał już usunięty');
-  }
-}, 60 * 60 * 1000);
-
 client.login(process.env.TOKEN);
