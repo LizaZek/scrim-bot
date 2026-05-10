@@ -1,48 +1,62 @@
 require('dotenv').config();
 
+//Wyciągnięcie konkretnych klas, obiektów i stałych z biblioteki discord.js
+//Zamiast pisać za każdym razem discord.js.Client czy discord.js.ButtonStyle można użyć Client oraz ButtonStyle
 const
 {
-  Client,
-  GatewayIntentBits,
-  PermissionsBitField,
-  ChannelType,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  EmbedBuilder,
-  Events,
-  REST,
-  Routes,
-  SlashCommandBuilder,
-  MessageFlags
+  //Client - Główna klasa bota, która pozwala mu łączyć się z API Discorda.
+  Client
+  //GatewayIntentBits - Służy do określania "Intencji" (Intents). 
+  // Musisz tu zadeklarować, do jakich danych bot ma mieć dostęp (np. czy ma widzieć treść wiadomości, czy listę członków).
+  , GatewayIntentBits
+  , PermissionsBitField
+  , ChannelType
+  , ActionRowBuilder
+  , ButtonBuilder
+  , ButtonStyle
+  , EmbedBuilder
+  //Events - Lista zdarzeń, na które bot może reagować (np. ClientReady, MessageCreate).
+  , Events
+
+  //Tworzenie Komend i Interakcji
+  //REST i Routes - wykorzystywane do "rejestrowania" (wysyłania) stworzonych komend do serwerów Discorda, aby użytkownicy mogli je zobaczyć.
+  , REST
+  , Routes
+  //SlashCommandBuilder - Narzędzie do definiowania komend typu "Slash" (tych zaczynających się od /).
+  , SlashCommandBuilder
+  , MessageFlags
 } = require('discord.js');
 
+// ===== Client =====
+//Zdefiniowanie klienta
 const client = new Client
 (
   {
-  intents: 
-  [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+    intents:
+    [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
   }
 );
 
 // ===== SLASH COMMAND =====
-
+//Definiowania komend typu "Slash" (tych zaczynających się od /).
 const commands = 
 [
   new SlashCommandBuilder()
     .setName('scrim')
     .setDescription('Stwórz scrima')
+    //--------------------------------------
     .addStringOption
     (
         option => option
-        .setName('team')
+        .setName('team_abcd')
         .setDescription('Nazwa teamu')
         .setRequired(true)
     )
+    //--------------------------------------
     .addStringOption
     (
         option => option
@@ -50,6 +64,7 @@ const commands =
         .setDescription('Godzina scrima')
         .setRequired(true)
     )
+    //--------------------------------------
     .addStringOption
     (
         option => option
@@ -65,6 +80,8 @@ const commands =
     ),
 ].map(command => command.toJSON());
 
+// ===== REST =====
+//"Rejestrowania" (wysyłania) stworzonych komend do serwerów Discorda, aby użytkownicy mogli je zobaczyć.
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (
     async () =>
@@ -101,7 +118,7 @@ client.once
 );
 
 // ===== COMMAND HANDLER =====
-
+//Funkcja odpowiadająca na zdażenie ON
 client.on(Events.InteractionCreate, async interaction => 
 {
   // ===== SLASH COMMAND =====
@@ -141,18 +158,24 @@ client.on(Events.InteractionCreate, async interaction =>
         }
   }
    // ===== BUTTON =====
-  if (interaction.isButton()) {
-    if (interaction.customId.startsWith('accept_')) {
+  if (interaction.isButton())
+  {
+    if (interaction.customId.startsWith('accept_'))
+    {
       const split = interaction.customId.split('_');
 
       const ownerId = split[1];
       const teamName = split[2];
 
-      if (interaction.user.id === ownerId) {
-        return interaction.reply({
-          content: 'Nie możesz zaakceptować własnego scrima.',
-          ephemeral: true,
-        });
+      if (interaction.user.id === ownerId)
+      {
+        return interaction.reply
+        (
+          {
+            content: 'Nie możesz zaakceptować własnego scrima.',
+            ephemeral: true,
+          }
+        );
       }
 
       const guild = interaction.guild;
@@ -161,47 +184,60 @@ client.on(Events.InteractionCreate, async interaction =>
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, '');
 
-      const channel = await guild.channels.create({
-        name: channelName,
-        type: ChannelType.GuildText,
-        permissionOverwrites: [
-          {
-            id: guild.roles.everyone,
-            deny: [PermissionsBitField.Flags.ViewChannel],
-          },
-          {
-            id: ownerId,
-            allow: [
-              PermissionsBitField.Flags.ViewChannel,
-              PermissionsBitField.Flags.SendMessages,
-            ],
-          },
-          {
-            id: interaction.user.id,
-            allow: [
-              PermissionsBitField.Flags.ViewChannel,
-              PermissionsBitField.Flags.SendMessages,
-            ],
-          },
-        ],
-      });
 
-      await channel.send(`
-🏆 Scrim utworzony!
+      //Automatyczne stworzenie nowego kanału tekstowego
+      const channel = await guild.channels.create //Ta funkcja mówi botowi: "Stwórz nowy kanał na tym serwerze".
+      (
+        {
+          name: channelName, //Nadaje kanałowi nazwę (przechowywaną pod zmienną channelName).
+          type: ChannelType.GuildText, //Określa, że ma to być zwykły kanał tekstowy (a nie np. głosowy czy forum).
+          permissionOverwrites: //Zarządzanie uprawnieniami
+          [
+            {
+              id: guild.roles.everyone,
+              deny: [PermissionsBitField.Flags.ViewChannel],
+            },
+            {
+              id: ownerId,
+              allow:
+              [
+                PermissionsBitField.Flags.ViewChannel,
+                PermissionsBitField.Flags.SendMessages,
+              ],
+            },
+            {
+              id: interaction.user.id,
+              allow:
+              [
+                PermissionsBitField.Flags.ViewChannel,
+                PermissionsBitField.Flags.SendMessages,
+              ],
+            },
+          ],
+        }
+      );
 
-Team 1: <@${ownerId}>
-Team 2: ${interaction.user}
+      await channel.send
+      (`
+        🏆 Scrim utworzony!
+        Team 1: <@${ownerId}>
+        Team 2: ${interaction.user}
 
-Powodzenia 🔥
-      `);
+        Powodzenia 🔥
+              `
+      );
 
-      await interaction.reply({
-        content: `Scrim zaakceptowany! Kanał: ${channel}`,
-        flags: MessageFlags.Ephemeral
-        //ephemeral: true, //<-- Stara instrukcja powodująca ostrzrzenie
-      });
+      await interaction.reply
+      (
+        {
+          content: `Scrim zaakceptowany! Kanał: ${channel}`,
+          flags: MessageFlags.Ephemeral
+          //ephemeral: true, //<-- Stara instrukcja powodująca ostrzrzenie
+        }
+      );
     }
   }
-});
+}
+); //koniec client.on(Events.InteractionCreate, async interaction => ...
 
 client.login(process.env.TOKEN);
